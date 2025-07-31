@@ -13,6 +13,61 @@
   box-sizing: border-box;
 }
 
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .provider-registration-container {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  }
+  
+  .registration-card {
+    background: #1e293b;
+    border-color: rgba(37, 99, 235, 0.2);
+  }
+  
+  .app-title,
+  .registration-title {
+    color: #f8fafc;
+  }
+  
+  .registration-subtitle {
+    color: #cbd5e1;
+  }
+  
+  .form-label {
+    color: #e2e8f0;
+  }
+  
+  .form-input {
+    background: #334155;
+    border-color: #475569;
+    color: #f8fafc;
+  }
+  
+  .form-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+  
+  .form-input::placeholder {
+    color: #94a3b8;
+  }
+  
+  .form-select {
+    background: #334155;
+    border-color: #475569;
+    color: #f8fafc;
+  }
+  
+  .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+  
+  .checkbox-label {
+    color: #e2e8f0;
+  }
+}
+
 .registration-background {
   position: absolute;
   top: 0;

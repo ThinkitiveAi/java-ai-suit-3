@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import './ProviderRegistration.css';
 
 interface ProviderRegistrationProps {
@@ -9,64 +9,115 @@ interface ProviderRegistrationProps {
 }
 
 export interface RegistrationFormData {
-  // Personal Information
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  profilePhoto: File | null;
-  
-  // Professional Information
+  phoneNumber: string;
   licenseNumber: string;
   specialization: string;
-  yearsExperience: string;
-  qualifications: string;
-  
-  // Practice Information
-  practiceName: string;
-  streetAddress: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  practiceType: string;
-  
-  // Account Security
+  yearsOfExperience: number;
+  clinicAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
   password: string;
   confirmPassword: string;
-  
-  // Terms
   acceptTerms: boolean;
 }
 
+interface ValidationErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  licenseNumber?: string;
+  specialization?: string;
+  yearsOfExperience?: string;
+  clinicAddress?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+  };
+  password?: string;
+  confirmPassword?: string;
+  acceptTerms?: string;
+}
+
 const specializations = [
-  'Cardiology',
-  'Dermatology',
-  'Pediatrics',
-  'Internal Medicine',
-  'Orthopedics',
-  'Neurology',
-  'Psychiatry',
-  'Oncology',
-  'Emergency Medicine',
-  'Family Medicine',
-  'Obstetrics & Gynecology',
-  'Radiology',
-  'Anesthesiology',
-  'Pathology',
-  'General Surgery',
-  'Other'
+  'ONCOLOGY',
+  'HEMATOLOGY',
+  'GASTROENTEROLOGY',
+  'ORTHOPEDIC_SURGERY',
+  'PSYCHIATRY',
+  'PHYSICIAN_ASSISTANT',
+  'RADIOLOGY',
+  'PEDIATRICS',
+  'PLASTIC_SURGERY',
+  'ANESTHESIOLOGY',
+  'NURSE_PRACTITIONER',
+  'GENERAL_SURGERY',
+  'OBSTETRICS_GYNECOLOGY',
+  'NEPHROLOGY',
+  'PHYSICAL_MEDICINE',
+  'OTOLARYNGOLOGY',
+  'RHEUMATOLOGY',
+  'CARDIOLOGY',
+  'NEUROLOGY',
+  'DERMATOLOGY',
+  'INFECTIOUS_DISEASE',
+  'NEUROSURGERY',
+  'INTERNAL_MEDICINE',
+  'OPHTHALMOLOGY',
+  'PATHOLOGY',
+  'ALLERGY_IMMUNOLOGY',
+  'UROLOGY',
+  'EMERGENCY_MEDICINE',
+  'OTHER',
+  'FAMILY_MEDICINE',
+  'PULMONOLOGY'
 ];
 
-const practiceTypes = [
-  'Private Practice',
-  'Hospital',
-  'Clinic',
-  'Urgent Care',
-  'Specialty Center',
-  'Academic Medical Center',
-  'Government Facility',
-  'Other'
-];
+// Helper function to convert API values to display names
+const getSpecializationDisplayName = (apiValue: string): string => {
+  const displayNames: { [key: string]: string } = {
+    'ONCOLOGY': 'Oncology',
+    'HEMATOLOGY': 'Hematology',
+    'GASTROENTEROLOGY': 'Gastroenterology',
+    'ORTHOPEDIC_SURGERY': 'Orthopedic Surgery',
+    'PSYCHIATRY': 'Psychiatry',
+    'PHYSICIAN_ASSISTANT': 'Physician Assistant',
+    'RADIOLOGY': 'Radiology',
+    'PEDIATRICS': 'Pediatrics',
+    'PLASTIC_SURGERY': 'Plastic Surgery',
+    'ANESTHESIOLOGY': 'Anesthesiology',
+    'NURSE_PRACTITIONER': 'Nurse Practitioner',
+    'GENERAL_SURGERY': 'General Surgery',
+    'OBSTETRICS_GYNECOLOGY': 'Obstetrics & Gynecology',
+    'NEPHROLOGY': 'Nephrology',
+    'PHYSICAL_MEDICINE': 'Physical Medicine',
+    'OTOLARYNGOLOGY': 'Otolaryngology',
+    'RHEUMATOLOGY': 'Rheumatology',
+    'CARDIOLOGY': 'Cardiology',
+    'NEUROLOGY': 'Neurology',
+    'DERMATOLOGY': 'Dermatology',
+    'INFECTIOUS_DISEASE': 'Infectious Disease',
+    'NEUROSURGERY': 'Neurosurgery',
+    'INTERNAL_MEDICINE': 'Internal Medicine',
+    'OPHTHALMOLOGY': 'Ophthalmology',
+    'PATHOLOGY': 'Pathology',
+    'ALLERGY_IMMUNOLOGY': 'Allergy & Immunology',
+    'UROLOGY': 'Urology',
+    'EMERGENCY_MEDICINE': 'Emergency Medicine',
+    'OTHER': 'Other',
+    'FAMILY_MEDICINE': 'Family Medicine',
+    'PULMONOLOGY': 'Pulmonology'
+  };
+  
+  return displayNames[apiValue] || apiValue;
+};
 
 const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
   onRegister,
@@ -78,28 +129,24 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    profilePhoto: null,
+    phoneNumber: '',
     licenseNumber: '',
     specialization: '',
-    yearsExperience: '',
-    qualifications: '',
-    practiceName: '',
-    streetAddress: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    practiceType: '',
+    yearsOfExperience: 0,
+    clinicAddress: {
+      street: '',
+      city: '',
+      state: '',
+      zip: ''
+    },
     password: '',
     confirmPassword: '',
     acceptTerms: false
   });
 
-  const [validationErrors, setValidationErrors] = useState<Partial<RegistrationFormData>>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -120,7 +167,7 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
   };
 
   const validateForm = (): boolean => {
-    const errors: Partial<RegistrationFormData> = {};
+    const errors: ValidationErrors = {};
 
     // Personal Information
     if (!formData.firstName.trim()) errors.firstName = 'First name is required';
@@ -130,25 +177,34 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
     } else if (!validateEmail(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    if (!formData.phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else if (!validatePhone(formData.phone)) {
-      errors.phone = 'Please enter a valid phone number';
+    if (!formData.phoneNumber.trim()) {
+      errors.phoneNumber = 'Phone number is required';
+    } else if (!validatePhone(formData.phoneNumber)) {
+      errors.phoneNumber = 'Please enter a valid phone number';
     }
 
     // Professional Information
     if (!formData.licenseNumber.trim()) errors.licenseNumber = 'Medical license number is required';
     if (!formData.specialization) errors.specialization = 'Specialization is required';
-    if (!formData.yearsExperience) errors.yearsExperience = 'Years of experience is required';
-    if (!formData.qualifications.trim()) errors.qualifications = 'Qualifications are required';
+    if (formData.yearsOfExperience <= 0) errors.yearsOfExperience = 'Years of experience is required';
 
-    // Practice Information
-    if (!formData.practiceName.trim()) errors.practiceName = 'Practice name is required';
-    if (!formData.streetAddress.trim()) errors.streetAddress = 'Street address is required';
-    if (!formData.city.trim()) errors.city = 'City is required';
-    if (!formData.state.trim()) errors.state = 'State is required';
-    if (!formData.zipCode.trim()) errors.zipCode = 'ZIP code is required';
-    if (!formData.practiceType) errors.practiceType = 'Practice type is required';
+    // Clinic Address
+    if (!formData.clinicAddress.street.trim()) {
+      if (!errors.clinicAddress) errors.clinicAddress = {};
+      errors.clinicAddress.street = 'Street address is required';
+    }
+    if (!formData.clinicAddress.city.trim()) {
+      if (!errors.clinicAddress) errors.clinicAddress = {};
+      errors.clinicAddress.city = 'City is required';
+    }
+    if (!formData.clinicAddress.state.trim()) {
+      if (!errors.clinicAddress) errors.clinicAddress = {};
+      errors.clinicAddress.state = 'State is required';
+    }
+    if (!formData.clinicAddress.zip.trim()) {
+      if (!errors.clinicAddress) errors.clinicAddress = {};
+      errors.clinicAddress.zip = 'ZIP code is required';
+    }
 
     // Account Security
     if (!formData.password) {
@@ -176,51 +232,23 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof RegistrationFormData, value: string | boolean) => {
+  const handleInputChange = (field: keyof RegistrationFormData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (validationErrors[field]) {
+    if (validationErrors[field as keyof ValidationErrors]) {
       setValidationErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('File size must be less than 5MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      setFormData(prev => ({ ...prev, profilePhoto: file }));
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      setFormData(prev => ({ ...prev, profilePhoto: file }));
+  const handleAddressChange = (field: keyof RegistrationFormData['clinicAddress'], value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      clinicAddress: { ...prev.clinicAddress, [field]: value }
+    }));
+    if (validationErrors.clinicAddress?.[field]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        clinicAddress: { ...prev.clinicAddress, [field]: undefined }
+      }));
     }
   };
 
@@ -264,46 +292,53 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
           </div>
         )}
 
-        <form className="registration-form" onSubmit={handleSubmit}>
-          {/* Personal Information Section */}
+        <form onSubmit={handleSubmit} className="registration-form">
+          {/* Personal Information */}
           <div className="form-section">
-            <h3 className="section-title">Personal Information</h3>
-            
+            <h3>Personal Information</h3>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label" htmlFor="firstName">First Name *</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  className={`form-input ${validationErrors.firstName ? 'error' : ''}`}
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  placeholder="Enter your first name"
-                />
+                <label htmlFor="firstName">First Name *</label>
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                  <input
+                    type="text"
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    className={`form-input ${validationErrors.firstName ? 'error' : ''}`}
+                    placeholder="Enter your first name"
+                  />
+                </div>
                 {validationErrors.firstName && (
-                  <div className="validation-error">{validationErrors.firstName}</div>
+                  <span className="error-text">{validationErrors.firstName}</span>
                 )}
               </div>
-              
               <div className="form-group">
-                <label className="form-label" htmlFor="lastName">Last Name *</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  className={`form-input ${validationErrors.lastName ? 'error' : ''}`}
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Enter your last name"
-                />
+                <label htmlFor="lastName">Last Name *</label>
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                  <input
+                    type="text"
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className={`form-input ${validationErrors.lastName ? 'error' : ''}`}
+                    placeholder="Enter your last name"
+                  />
+                </div>
                 {validationErrors.lastName && (
-                  <div className="validation-error">{validationErrors.lastName}</div>
+                  <span className="error-text">{validationErrors.lastName}</span>
                 )}
               </div>
             </div>
-
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label" htmlFor="email">Email Address *</label>
+                <label htmlFor="email">Email Address *</label>
                 <div className="input-wrapper">
                   <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
@@ -311,379 +346,318 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({
                   <input
                     type="email"
                     id="email"
-                    className={`form-input ${validationErrors.email ? 'error' : ''}`}
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
+                    className={`form-input ${validationErrors.email ? 'error' : ''}`}
                     placeholder="Enter your email address"
                   />
                 </div>
                 {validationErrors.email && (
-                  <div className="validation-error">{validationErrors.email}</div>
+                  <span className="error-text">{validationErrors.email}</span>
                 )}
               </div>
-              
               <div className="form-group">
-                <label className="form-label" htmlFor="phone">Phone Number *</label>
+                <label htmlFor="phoneNumber">Phone Number *</label>
                 <div className="input-wrapper">
                   <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
                   </svg>
                   <input
                     type="tel"
-                    id="phone"
-                    className={`form-input ${validationErrors.phone ? 'error' : ''}`}
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    id="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    className={`form-input ${validationErrors.phoneNumber ? 'error' : ''}`}
                     placeholder="Enter your phone number"
                   />
                 </div>
-                {validationErrors.phone && (
-                  <div className="validation-error">{validationErrors.phone}</div>
+                {validationErrors.phoneNumber && (
+                  <span className="error-text">{validationErrors.phoneNumber}</span>
                 )}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Profile Photo</label>
-              <div 
-                className="photo-upload-area"
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {photoPreview ? (
-                  <div className="photo-preview">
-                    <img src={photoPreview} alt="Profile preview" />
-                    <button 
-                      type="button" 
-                      className="remove-photo"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPhotoPreview(null);
-                        setFormData(prev => ({ ...prev, profilePhoto: null }));
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <div className="upload-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                    <p>Click to upload or drag and drop</p>
-                    <span>JPG, PNG up to 5MB</span>
-                  </div>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  style={{ display: 'none' }}
-                />
               </div>
             </div>
           </div>
 
-          {/* Professional Information Section */}
+          {/* Professional Information */}
           <div className="form-section">
-            <h3 className="section-title">Professional Information</h3>
-            
+            <h3>Professional Information</h3>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label" htmlFor="licenseNumber">Medical License Number *</label>
-                <input
-                  type="text"
-                  id="licenseNumber"
-                  className={`form-input ${validationErrors.licenseNumber ? 'error' : ''}`}
-                  value={formData.licenseNumber}
-                  onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
-                  placeholder="Enter your medical license number"
-                />
+                <label htmlFor="licenseNumber">Medical License Number *</label>
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                  </svg>
+                  <input
+                    type="text"
+                    id="licenseNumber"
+                    value={formData.licenseNumber}
+                    onChange={(e) => handleInputChange('licenseNumber', e.target.value)}
+                    className={`form-input ${validationErrors.licenseNumber ? 'error' : ''}`}
+                    placeholder="Enter your medical license number"
+                  />
+                </div>
                 {validationErrors.licenseNumber && (
-                  <div className="validation-error">{validationErrors.licenseNumber}</div>
+                  <span className="error-text">{validationErrors.licenseNumber}</span>
                 )}
               </div>
-              
               <div className="form-group">
-                <label className="form-label" htmlFor="specialization">Specialization *</label>
-                <select
-                  id="specialization"
-                  className={`form-input ${validationErrors.specialization ? 'error' : ''}`}
-                  value={formData.specialization}
-                  onChange={(e) => handleInputChange('specialization', e.target.value)}
-                >
-                  <option value="">Select specialization</option>
-                  {specializations.map(spec => (
-                    <option key={spec} value={spec}>{spec}</option>
-                  ))}
-                </select>
+                <label htmlFor="specialization">Specialization *</label>
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                  </svg>
+                  <select
+                    id="specialization"
+                    value={formData.specialization}
+                    onChange={(e) => handleInputChange('specialization', e.target.value)}
+                    className={`form-input ${validationErrors.specialization ? 'error' : ''}`}
+                  >
+                    <option value="">Select your specialization</option>
+                    {specializations.map(spec => (
+                      <option key={spec} value={spec}>
+                        {getSpecializationDisplayName(spec)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {validationErrors.specialization && (
-                  <div className="validation-error">{validationErrors.specialization}</div>
+                  <span className="error-text">{validationErrors.specialization}</span>
                 )}
               </div>
             </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label" htmlFor="yearsExperience">Years of Experience *</label>
-                <select
-                  id="yearsExperience"
-                  className={`form-input ${validationErrors.yearsExperience ? 'error' : ''}`}
-                  value={formData.yearsExperience}
-                  onChange={(e) => handleInputChange('yearsExperience', e.target.value)}
-                >
-                  <option value="">Select years</option>
-                  {Array.from({ length: 50 }, (_, i) => i + 1).map(year => (
-                    <option key={year} value={year}>{year} {year === 1 ? 'year' : 'years'}</option>
-                  ))}
-                </select>
-                {validationErrors.yearsExperience && (
-                  <div className="validation-error">{validationErrors.yearsExperience}</div>
-                )}
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label" htmlFor="practiceType">Practice Type *</label>
-                <select
-                  id="practiceType"
-                  className={`form-input ${validationErrors.practiceType ? 'error' : ''}`}
-                  value={formData.practiceType}
-                  onChange={(e) => handleInputChange('practiceType', e.target.value)}
-                >
-                  <option value="">Select practice type</option>
-                  {practiceTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-                {validationErrors.practiceType && (
-                  <div className="validation-error">{validationErrors.practiceType}</div>
-                )}
-              </div>
-            </div>
-
             <div className="form-group">
-              <label className="form-label" htmlFor="qualifications">Medical Degree/Qualifications *</label>
-              <textarea
-                id="qualifications"
-                className={`form-input ${validationErrors.qualifications ? 'error' : ''}`}
-                value={formData.qualifications}
-                onChange={(e) => handleInputChange('qualifications', e.target.value)}
-                placeholder="Enter your medical degrees and qualifications"
-                rows={3}
-              />
-              {validationErrors.qualifications && (
-                <div className="validation-error">{validationErrors.qualifications}</div>
+              <label htmlFor="yearsOfExperience">Years of Experience *</label>
+              <div className="input-wrapper">
+                <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <input
+                  type="number"
+                  id="yearsOfExperience"
+                  value={formData.yearsOfExperience}
+                  onChange={(e) => handleInputChange('yearsOfExperience', parseInt(e.target.value) || 0)}
+                  className={`form-input ${validationErrors.yearsOfExperience ? 'error' : ''}`}
+                  placeholder="Enter years of experience"
+                  min="0"
+                  max="50"
+                />
+              </div>
+              {validationErrors.yearsOfExperience && (
+                <span className="error-text">{validationErrors.yearsOfExperience}</span>
               )}
             </div>
           </div>
 
-          {/* Practice Information Section */}
+          {/* Clinic Address */}
           <div className="form-section">
-            <h3 className="section-title">Practice Information</h3>
-            
+            <h3>Clinic Address</h3>
             <div className="form-group">
-              <label className="form-label" htmlFor="practiceName">Clinic/Hospital Name *</label>
-              <input
-                type="text"
-                id="practiceName"
-                className={`form-input ${validationErrors.practiceName ? 'error' : ''}`}
-                value={formData.practiceName}
-                onChange={(e) => handleInputChange('practiceName', e.target.value)}
-                placeholder="Enter your practice name"
-              />
-              {validationErrors.practiceName && (
-                <div className="validation-error">{validationErrors.practiceName}</div>
+              <label htmlFor="street">Street Address *</label>
+              <div className="input-wrapper">
+                <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                <input
+                  type="text"
+                  id="street"
+                  value={formData.clinicAddress.street}
+                  onChange={(e) => handleAddressChange('street', e.target.value)}
+                  className={`form-input ${validationErrors.clinicAddress?.street ? 'error' : ''}`}
+                  placeholder="Enter street address"
+                />
+              </div>
+              {validationErrors.clinicAddress?.street && (
+                <span className="error-text">{validationErrors.clinicAddress.street}</span>
               )}
             </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="streetAddress">Street Address *</label>
-              <input
-                type="text"
-                id="streetAddress"
-                className={`form-input ${validationErrors.streetAddress ? 'error' : ''}`}
-                value={formData.streetAddress}
-                onChange={(e) => handleInputChange('streetAddress', e.target.value)}
-                placeholder="Enter street address"
-              />
-              {validationErrors.streetAddress && (
-                <div className="validation-error">{validationErrors.streetAddress}</div>
-              )}
-            </div>
-
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label" htmlFor="city">City *</label>
-                <input
-                  type="text"
-                  id="city"
-                  className={`form-input ${validationErrors.city ? 'error' : ''}`}
-                  value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  placeholder="Enter city"
-                />
-                {validationErrors.city && (
-                  <div className="validation-error">{validationErrors.city}</div>
+                <label htmlFor="city">City *</label>
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                  </svg>
+                  <input
+                    type="text"
+                    id="city"
+                    value={formData.clinicAddress.city}
+                    onChange={(e) => handleAddressChange('city', e.target.value)}
+                    className={`form-input ${validationErrors.clinicAddress?.city ? 'error' : ''}`}
+                    placeholder="Enter city"
+                  />
+                </div>
+                {validationErrors.clinicAddress?.city && (
+                  <span className="error-text">{validationErrors.clinicAddress.city}</span>
                 )}
               </div>
-              
               <div className="form-group">
-                <label className="form-label" htmlFor="state">State *</label>
-                <input
-                  type="text"
-                  id="state"
-                  className={`form-input ${validationErrors.state ? 'error' : ''}`}
-                  value={formData.state}
-                  onChange={(e) => handleInputChange('state', e.target.value)}
-                  placeholder="Enter state"
-                />
-                {validationErrors.state && (
-                  <div className="validation-error">{validationErrors.state}</div>
+                <label htmlFor="state">State *</label>
+                <div className="input-wrapper">
+                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                  </svg>
+                  <input
+                    type="text"
+                    id="state"
+                    value={formData.clinicAddress.state}
+                    onChange={(e) => handleAddressChange('state', e.target.value)}
+                    className={`form-input ${validationErrors.clinicAddress?.state ? 'error' : ''}`}
+                    placeholder="Enter state"
+                  />
+                </div>
+                {validationErrors.clinicAddress?.state && (
+                  <span className="error-text">{validationErrors.clinicAddress.state}</span>
                 )}
               </div>
-              
-              <div className="form-group">
-                <label className="form-label" htmlFor="zipCode">ZIP Code *</label>
+            </div>
+            <div className="form-group">
+              <label htmlFor="zip">ZIP Code *</label>
+              <div className="input-wrapper">
+                <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
                 <input
                   type="text"
-                  id="zipCode"
-                  className={`form-input ${validationErrors.zipCode ? 'error' : ''}`}
-                  value={formData.zipCode}
-                  onChange={(e) => handleInputChange('zipCode', e.target.value)}
+                  id="zip"
+                  value={formData.clinicAddress.zip}
+                  onChange={(e) => handleAddressChange('zip', e.target.value)}
+                  className={`form-input ${validationErrors.clinicAddress?.zip ? 'error' : ''}`}
                   placeholder="Enter ZIP code"
                 />
-                {validationErrors.zipCode && (
-                  <div className="validation-error">{validationErrors.zipCode}</div>
-                )}
               </div>
+              {validationErrors.clinicAddress?.zip && (
+                <span className="error-text">{validationErrors.clinicAddress.zip}</span>
+              )}
             </div>
           </div>
 
-          {/* Account Security Section */}
+          {/* Account Security */}
           <div className="form-section">
-            <h3 className="section-title">Account Security</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label" htmlFor="password">Password *</label>
-                <div className="input-wrapper">
-                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+            <h3>Account Security</h3>
+            <div className="form-group">
+              <label htmlFor="password">Password *</label>
+              <div className="input-wrapper">
+                <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+                </svg>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className={`form-input ${validationErrors.password ? 'error' : ''}`}
+                  placeholder="Create a strong password"
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    {showPassword ? (
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    ) : (
+                      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    )}
                   </svg>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="password"
-                    className={`form-input ${validationErrors.password ? 'error' : ''}`}
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    placeholder="Create a strong password"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      {showPassword ? (
-                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                      ) : (
-                        <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
-                      )}
-                    </svg>
-                  </button>
-                </div>
-                {formData.password && (
-                  <div className="password-strength" style={{ color: passwordStrength.color }}>
-                    Password strength: {passwordStrength.strength}
-                  </div>
-                )}
-                {validationErrors.password && (
-                  <div className="validation-error">{validationErrors.password}</div>
-                )}
+                </button>
               </div>
-              
-              <div className="form-group">
-                <label className="form-label" htmlFor="confirmPassword">Confirm Password *</label>
-                <div className="input-wrapper">
-                  <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+              {passwordStrength.strength && (
+                <div className="password-strength">
+                  <span style={{ color: passwordStrength.color }}>
+                    {passwordStrength.strength}
+                  </span>
+                </div>
+              )}
+              {validationErrors.password && (
+                <span className="error-text">{validationErrors.password}</span>
+              )}
+            </div>
+            <div className="form-group">
+              <label htmlFor="confirmPassword">Confirm Password *</label>
+              <div className="input-wrapper">
+                <svg className="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/>
+                </svg>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  className={`form-input ${validationErrors.confirmPassword ? 'error' : ''}`}
+                  placeholder="Confirm your password"
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    {showConfirmPassword ? (
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    ) : (
+                      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    )}
                   </svg>
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    id="confirmPassword"
-                    className={`form-input ${validationErrors.confirmPassword ? 'error' : ''}`}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    placeholder="Confirm your password"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      {showConfirmPassword ? (
-                        <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                      ) : (
-                        <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
-                      )}
-                    </svg>
-                  </button>
-                </div>
-                {validationErrors.confirmPassword && (
-                  <div className="validation-error">{validationErrors.confirmPassword}</div>
-                )}
+                </button>
               </div>
+              {validationErrors.confirmPassword && (
+                <span className="error-text">{validationErrors.confirmPassword}</span>
+              )}
             </div>
           </div>
 
           {/* Terms and Conditions */}
           <div className="form-section">
-            <div className="checkbox-wrapper">
-              <input
-                type="checkbox"
-                id="acceptTerms"
-                className="checkbox-input"
-                checked={formData.acceptTerms}
-                onChange={(e) => handleInputChange('acceptTerms', e.target.checked)}
-              />
-              <label htmlFor="acceptTerms" className="checkbox-custom"></label>
-              <label htmlFor="acceptTerms" className="checkbox-label">
-                I agree to the <button type="button" className="link-button">Terms of Service</button> and{' '}
-                <button type="button" className="link-button">Privacy Policy</button> *
+            <div className="form-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptTerms}
+                  onChange={(e) => handleInputChange('acceptTerms', e.target.checked)}
+                  className={validationErrors.acceptTerms ? 'error' : ''}
+                />
+                <span className="checkmark"></span>
+                I agree to the <a href="#" className="terms-link">Terms and Conditions</a> and <a href="#" className="terms-link">Privacy Policy</a> *
               </label>
+              {validationErrors.acceptTerms && (
+                <span className="error-text">{validationErrors.acceptTerms}</span>
+              )}
             </div>
-            {validationErrors.acceptTerms && (
-              <div className="validation-error">{validationErrors.acceptTerms}</div>
-            )}
           </div>
 
-          <button
-            type="submit"
-            className={`registration-button ${isLoading ? 'loading' : ''}`}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <div className="spinner"></div>
-                Creating Account...
-              </>
-            ) : (
-              'Create Account'
-            )}
-          </button>
-        </form>
-
-        <div className="registration-footer">
-          <p className="footer-text">
-            Already have an account?{' '}
-            <button type="button" className="login-link" onClick={onBackToLogin}>
-              Sign in here
+          {/* Action Buttons */}
+          <div className="form-actions">
+            <button
+              type="button"
+              onClick={onBackToLogin}
+              className="back-button"
+              disabled={isLoading}
+            >
+              Back to Login
             </button>
-          </p>
-        </div>
+            <button
+              type="submit"
+              className="register-button"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeDasharray="31.416" strokeDashoffset="31.416">
+                      <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+                      <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+                    </circle>
+                  </svg>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
