@@ -9,6 +9,7 @@ import type { RegistrationFormData } from './components/ProviderRegistration';
 import type { PatientRegistrationFormData } from './components/PatientRegistration';
 
 // Provider Dashboard Component
+
 const ProviderDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => (
   <div className="dashboard-container">
     <div className="dashboard-header">
