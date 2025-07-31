@@ -5,25 +5,75 @@ import ProviderLogin from './components/ProviderLogin';
 import ProviderRegistration from './components/ProviderRegistration';
 import PatientLogin from './components/PatientLogin';
 import PatientRegistration from './components/PatientRegistration';
+import ProviderNavbar from './components/ProviderNavbar';
+import ProviderAvailability from './components/ProviderAvailability';
 import type { RegistrationFormData } from './components/ProviderRegistration';
 import type { PatientRegistrationFormData } from './components/PatientRegistration';
 
 // Provider Dashboard Component
 
-const ProviderDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => (
-  <div className="dashboard-container">
-    <div className="dashboard-header">
-      <h1>Provider Dashboard</h1>
-      <button className="logout-button" onClick={onLogout}>
-        Logout
-      </button>
+const ProviderDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  // Get provider data from localStorage
+  const getProviderData = () => {
+    const providerData = localStorage.getItem('providerData');
+    if (providerData) {
+      try {
+        return JSON.parse(providerData);
+      } catch (error) {
+        console.error('Error parsing provider data:', error);
+      }
+    }
+    return null;
+  };
+
+  const providerData = getProviderData();
+  const providerName = providerData ? `${providerData.firstName} ${providerData.lastName}` : 'Provider';
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'availability':
+        return <ProviderAvailability />;
+      case 'appointments':
+        return (
+          <div className="dashboard-content">
+            <h2>Appointments</h2>
+            <p>Manage your appointments and patient schedules.</p>
+          </div>
+        );
+      case 'patients':
+        return (
+          <div className="dashboard-content">
+            <h2>Patients</h2>
+            <p>View and manage your patient information.</p>
+          </div>
+        );
+      default:
+        return (
+          <div className="dashboard-content">
+            <h2>Dashboard</h2>
+            <p>Welcome to the Healthcare Provider Dashboard</p>
+            <p>Manage your patients, appointments, and healthcare services.</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="dashboard-container">
+      <ProviderNavbar 
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onLogout={onLogout}
+        providerName={providerName}
+      />
+      <div className="dashboard-main">
+        {renderContent()}
+      </div>
     </div>
-    <div className="dashboard-content">
-      <p>Welcome to the Healthcare Provider Dashboard</p>
-      <p>Manage your patients, appointments, and healthcare services.</p>
-    </div>
-  </div>
-);
+  );
+};
 
 // Patient Dashboard Component
 const PatientDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => (
@@ -45,35 +95,87 @@ const PatientDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => (
 const ProviderRoutes: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    // Check if user is already logged in
+    const token = localStorage.getItem('authToken');
+    return !!token;
+  });
   const [currentView, setCurrentView] = useState<'login' | 'registration'>('login');
 
   const handleLogin = async (credentials: { email: string; password: string; rememberMe: boolean }) => {
     setIsLoading(true);
     setError('');
     
-    setTimeout(() => {
-      if (credentials.email === 'demo@healthfirst.com' && credentials.password === 'Pass@123') {
+    try {
+      const response = await fetch('http://192.168.0.112:8080/api/v1/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store the token in localStorage
+        localStorage.setItem('authToken', data.token || data.accessToken);
+        localStorage.setItem('providerData', JSON.stringify(data.user || data));
         setIsLoggedIn(true);
         setError('');
       } else {
-        setError('Invalid email or password. Please try again.');
+        setError(data.message || 'Invalid email or password. Please try again.');
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   const handleRegister = async (formData: RegistrationFormData) => {
     setIsLoading(true);
     setError('');
     
-    setTimeout(() => {
-      console.log('Provider Registration data:', formData);
-      alert('Registration successful! Please check your email for verification.');
-      setCurrentView('login');
-      setError('');
+    try {
+      const response = await fetch('http://192.168.0.112:8080/api/v1/provider/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          phoneNumber: formData.phoneNumber,
+          specialization: formData.specialization,
+          yearsOfExperience: formData.yearsOfExperience,
+          licenseNumber: formData.licenseNumber,
+          clinicAddress: formData.clinicAddress
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Registration successful! Please check your email for verification.');
+        setCurrentView('login');
+        setError('');
+      } else {
+        setError(data.message || 'Registration failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setIsLoading(false);
-    }, 3000);
+    }
   };
 
   const handleForgotPassword = () => {
@@ -91,6 +193,9 @@ const ProviderRoutes: React.FC = () => {
   };
 
   const handleLogout = () => {
+    // Clear localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('providerData');
     setIsLoggedIn(false);
     setCurrentView('login');
     setError('');
@@ -134,7 +239,7 @@ const PatientRoutes: React.FC = () => {
     setError('');
     
     setTimeout(() => {
-      if (credentials.email === 'patient@healthfirst.com' && credentials.password === 'Pass@123') {
+      if (credentials.email === 'patient@thinkitive.com' && credentials.password === 'Pass@123') {
         setIsLoggedIn(true);
         setError('');
       } else {
